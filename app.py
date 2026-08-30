@@ -17,6 +17,7 @@ Routes :
 """
 
 import html as _html
+import hmac as _hmac
 import ipaddress
 import json
 import os
@@ -31,7 +32,7 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 import pyperclip
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request
 
 from data_loader import build_service_catalog
 
@@ -86,6 +87,33 @@ CONFIG = _load_config()
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024  # 4 MB (pièces jointes)
+
+# Render deployment: the service is public, so require credentials from the
+# environment before serving either the UI or API.
+@app.before_request
+def _require_authentication():
+    username = os.environ.get("SMARTSUP_USERNAME")
+    password = os.environ.get("SMARTSUP_PASSWORD")
+    if not username or not password:
+        return jsonify({"error": "Service non configuré"}), 503
+
+    header = request.headers.get("Authorization", "")
+    if header.startswith("Basic "):
+        try:
+            import base64
+            supplied = base64.b64decode(header[6:]).decode("utf-8")
+            supplied_user, separator, supplied_password = supplied.partition(":")
+            if (separator and _hmac.compare_digest(supplied_user, username)
+                    and _hmac.compare_digest(supplied_password, password)):
+                return None
+        except (ValueError, UnicodeDecodeError):
+            pass
+
+    return Response(
+        "Authentification requise",
+        401,
+        {"WWW-Authenticate": 'Basic realm="SmartSup", charset="UTF-8"'},
+    )
 
 # ── Init base de données v4 ───────────────────────────────────
 init_db()

@@ -2625,6 +2625,88 @@ async function srCopier(brut) {
   }
 }
 
+// ── Outlook local / fichier EML ────────────────────────────────────────────
+// Le navigateur contacte un agent Windows privé, exposé uniquement dans le
+// tailnet Tailscale. Le secret reste dans sessionStorage sur l'appareil de
+// l'opérateur et n'est jamais conservé par Render.
+function srAgentConfig() {
+  let url = sessionStorage.getItem('smartsup.agent.url') || '';
+  let token = sessionStorage.getItem('smartsup.agent.token') || '';
+
+  if (!url || !token) {
+    url = window.prompt(
+      "URL HTTPS de l'agent Outlook local (Tailscale Serve) :",
+      url || ''
+    ) || '';
+    if (!url) return null;
+    token = window.prompt("Jeton de l'agent Outlook local :") || '';
+    if (!token) return null;
+    sessionStorage.setItem('smartsup.agent.url', url.replace(/\/$/, ''));
+    sessionStorage.setItem('smartsup.agent.token', token);
+  }
+  return { url: url.replace(/\/$/, ''), token };
+}
+
+async function srOuvrirOutlookLocal() {
+  if (!SR.dernierApercu) {
+    showToast('Générez d’abord un aperçu.', 'error');
+    return;
+  }
+  const cfg = srAgentConfig();
+  if (!cfg) return;
+
+  try {
+    const res = await fetch(cfg.url + '/v1/outlook/draft', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SmartSup-Agent-Token': cfg.token
+      },
+      body: JSON.stringify({
+        to: SR.dernierApercu.destinataires_a || [],
+        cc: SR.dernierApercu.destinataires_cc || [],
+        subject: SR.dernierApercu.sujet || '',
+        html_body: SR.dernierApercu.corps_html || ''
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Agent Outlook indisponible');
+    }
+    showToast('Brouillon ouvert dans Outlook local.', 'success');
+  } catch (e) {
+    console.error('Agent Outlook', e);
+    showToast('Outlook local : ' + e.message, 'error');
+  }
+}
+
+function srTelechargerEml() {
+  if (!SR.dernierApercu) {
+    showToast('Générez d’abord un aperçu.', 'error');
+    return;
+  }
+  const p = SR.dernierApercu;
+  const b64 = text => btoa(unescape(encodeURIComponent(text)));
+  const addresses = values => (values || []).join('; ');
+  const lines = [
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset="utf-8"',
+    'Content-Transfer-Encoding: base64',
+    'Subject: ' + (p.sujet || ''),
+    'To: ' + addresses(p.destinataires_a),
+    p.destinataires_cc?.length ? 'Cc: ' + addresses(p.destinataires_cc) : '',
+    '',
+    b64(p.corps_html || '')
+  ].filter(Boolean).join('\r\n');
+  const blob = new Blob([lines], { type: 'message/rfc822' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'smartsup_' + (SR.ticket || 'brouillon') + '.eml';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('Fichier .eml téléchargé : ouvrez-le avec Outlook.', 'success');
+}
+
 function srVider() {
   SR.ticket = ''; SR.priorite = ''; SR.service = null;
   SR.valeurs = {}; SR.incidentId = null;
@@ -2675,6 +2757,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sr-btn-enregistrer')?.addEventListener('click', srEnregistrer);
   document.getElementById('sr-btn-copier')?.addEventListener('click', () => srCopier(false));
   document.getElementById('sr-btn-texte')?.addEventListener('click', () => srCopier(true));
+  document.getElementById('sr-btn-outlook')?.addEventListener('click', srOuvrirOutlookLocal);
+  document.getElementById('sr-btn-eml')?.addEventListener('click', srTelechargerEml);
   document.getElementById('sr-btn-vider')?.addEventListener('click', srVider);
 });
 // ════════════════════════════════════════════════════════════════════════

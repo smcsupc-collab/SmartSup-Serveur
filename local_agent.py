@@ -89,7 +89,13 @@ class AgentHandler(BaseHTTPRequestHandler):
         if not self._cors_allowed():
             self._send_json(HTTPStatus.FORBIDDEN, {"error": "Origine non autorisée."})
             return
-        self._send_json(HTTPStatus.NO_CONTENT, {})
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Access-Control-Allow-Origin", ALLOWED_ORIGIN)
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-SmartSup-Agent-Token")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Vary", "Origin")
+        self.end_headers()
 
     def do_GET(self) -> None:
         if self.path != "/health":

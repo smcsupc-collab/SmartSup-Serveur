@@ -1,0 +1,20 @@
+{
+  "signature": {
+    "nom": "Prénom NOM",
+    "fonction": "Ingénieur Supervision",
+    "entite": "Orange Guinée — NOC",
+    "telephone": "+224 6XX XX XX XX"
+  },
+  "recipients_to": [
+    "groupe-incident@orange-guinee.com"
+  ],
+  "recipients_cc": [],
+  "excel_skip_sheets": [
+    "Plan d'action",
+    "Suivi Perfomances",
+    "Objectifs_2022",
+    "Synthese_2018",
+    "objectifs_Semestre_2_2018"
+  ],
+  "templates": []
+}

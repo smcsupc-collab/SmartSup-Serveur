@@ -2687,12 +2687,13 @@ function srTelechargerEml() {
   }
   const p = SR.dernierApercu;
   const b64 = text => btoa(unescape(encodeURIComponent(text)));
+  const encodeHeader = text => '=?UTF-8?B?' + b64(text || '') + '?=';
   const addresses = values => (values || []).join('; ');
   const lines = [
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset="utf-8"',
     'Content-Transfer-Encoding: base64',
-    'Subject: ' + (p.sujet || ''),
+    'Subject: ' + encodeHeader(p.sujet || ''),
     'To: ' + addresses(p.destinataires_a),
     p.destinataires_cc?.length ? 'Cc: ' + addresses(p.destinataires_cc) : '',
     '',

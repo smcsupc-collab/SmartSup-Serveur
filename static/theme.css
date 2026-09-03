@@ -1,0 +1,506 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM SMARTSUP — jetons et thèmes
+   ══════════════════════════════════════════════════════════════════════════
+
+   PÉRIMÈTRE : ce fichier ne concerne QUE l'interface de l'application.
+
+     Application  → ce fichier                    thèmes commutables
+     E-mails      → db/api_v5.py                  #FF6D00, Times New Roman
+     Rapports     → db/rapports.py                neutre, Arial, imprimable
+
+   Les e-mails et les rapports sont rendus dans des iframes : aucune règle
+   d'ici ne peut les atteindre. Cette séparation est vérifiée par les tests
+   (`TestChartesSeparees`) et ne doit pas être contournée.
+
+   ──────────────────────────────────────────────────────────────────────────
+   PRINCIPE
+
+   Deux niveaux de jetons, jamais mélangés :
+
+     1. PRIMITIFS  — la palette brute (--o-500, --gris-800…). Ne jamais les
+        utiliser directement dans un composant.
+     2. SÉMANTIQUES — le rôle (--fond, --texte, --critique…). C'est ce que
+        les composants consomment.
+
+   Un thème ne redéfinit que les jetons sémantiques. Aucun composant n'a
+   donc besoin d'être réécrit pour qu'un nouveau thème fonctionne.
+
+   ──────────────────────────────────────────────────────────────────────────
+   THÈMES
+
+     [data-theme="clair"]   Mode Clair    — journée, SaaS moderne
+     [data-theme="sombre"]  Mode Sombre   — usage prolongé en NOC
+     [data-theme="furtif"]  Mode Furtif   — supervision nocturne, luminosité
+                                            minimale, orange très discret
+     [data-theme="noc"]     Mode NOC      — grand écran, états très lisibles
+
+   Le mode « Automatique » applique clair ou sombre selon le système
+   d'exploitation (voir la règle prefers-color-scheme en fin de fichier).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. PRIMITIFS — palette brute
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Orange de marque Orange Guinée (identité fournie) */
+  --o-50:  #FFF4EA;
+  --o-100: #FFE4CC;
+  --o-200: #FFC999;
+  --o-300: #FFAF66;
+  --o-400: #FF9433;
+  --o-500: #FF7900;   /* couleur de marque */
+  --o-600: #E56D00;
+  --o-700: #CC6100;
+  --o-800: #994900;
+  --o-900: #663000;
+
+  /* Neutres — légèrement réchauffés pour s'accorder à l'orange */
+  --n-0:   #FFFFFF;
+  --n-25:  #FCFBFA;
+  --n-50:  #F7F5F3;
+  --n-100: #EFECE9;
+  --n-200: #E2DDD8;
+  --n-300: #C8C1BA;
+  --n-400: #9C948C;
+  --n-500: #736B64;
+  --n-600: #554E48;
+  --n-700: #3A342F;
+  --n-750: #2C2724;
+  --n-800: #211D1A;
+  --n-850: #191614;
+  --n-900: #12100F;
+  --n-950: #0A0908;
+  --n-1000:#000000;
+
+  /* États — trois intensités par état, pour couvrir tous les thèmes */
+  /* --vert-vif et --ambre-vif sont volontairement sombres : ils ne servent
+     que sur fond clair, où les teintes moyennes tombent sous le seuil de
+     contraste (l'ambre #D97706 n'atteignait que 2.93). */
+  --vert-vif:      #15803D;  --vert-moyen:  #22C55E;  --vert-doux:  #4ADE80;
+  --ambre-vif:     #B45309;  --ambre-moyen: #F59E0B;  --ambre-doux: #FBBF24;
+  --rouge-vif:     #DC2626;  --rouge-moyen: #EF4444;  --rouge-doux: #F87171;
+  --bleu-vif:      #2563EB;  --bleu-moyen:  #3B82F6;  --bleu-doux:  #60A5FA;
+
+  /* Variantes désaturées, réservées au mode furtif */
+  --vert-terne:  #4A7C59;
+  --ambre-terne: #8A7040;
+  --rouge-terne: #8C4A4A;
+  --bleu-terne:  #4A5F7C;
+
+  /* Typographie */
+  --police:      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --police-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Échelle typographique */
+  --t-2xs: 10px;  --t-xs: 11px;   --t-sm: 12px;    --t-base: 13px;
+  --t-md:  14px;  --t-lg: 16px;   --t-xl: 20px;    --t-2xl: 26px;
+
+  /* Rayons */
+  --r-xs: 4px;  --r-sm: 7px;  --r: 10px;  --r-lg: 14px;  --r-full: 100px;
+
+  /* Espacements */
+  --e-1: 4px;  --e-2: 8px;  --e-3: 12px;  --e-4: 16px;
+  --e-5: 22px; --e-6: 30px; --e-7: 40px;
+
+  /* Durées d'animation — discrètes, jamais décoratives */
+  --duree-rapide: .12s;
+  --duree:        .18s;
+  --duree-theme:  .25s;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. THÈME SOMBRE — défaut
+   Usage prolongé en salle de supervision. Contrastes propres, peu de
+   dégradés, orange qui attire l'œil sans agresser.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="sombre"] {
+  color-scheme: dark;
+
+  /* Surfaces, du plus profond au plus proéminent */
+  --fond:          var(--n-950);
+  --surface:       var(--n-900);
+  --surface-2:     var(--n-850);
+  --surface-3:     var(--n-800);
+  --surface-haute: var(--n-750);
+
+  /* Texte, par ordre d'importance */
+  --texte:      #F2EFEC;
+  --texte-2:    #A79E96;
+  --texte-3:    #6E655E;
+
+  /* Traits */
+  --trait:      rgba(255, 255, 255, .07);
+  --trait-fort: rgba(255, 255, 255, .13);
+  --trait-accent: rgba(255, 121, 0, .28);
+
+  /* Accent */
+  --accent:            var(--o-500);
+  --accent-clair:      var(--o-400);
+  --accent-sourd:      var(--o-800);
+  --accent-texte:      var(--o-400);
+  --accent-contraste:  #000000;
+  --accent-voile:      rgba(255, 121, 0, .13);
+  --accent-halo:       rgba(255, 121, 0, .22);
+
+  /* États sémantiques */
+  --succes:  var(--vert-moyen);   --succes-voile:  rgba(34, 197, 94, .13);
+  --alerte:  var(--ambre-moyen);  --alerte-voile:  rgba(245, 158, 11, .13);
+  --critique: var(--rouge-moyen); --critique-voile: rgba(239, 68, 68, .13);
+  --info:    var(--bleu-moyen);   --info-voile:    rgba(59, 130, 246, .13);
+  --neutre:  var(--n-400);        --neutre-voile:  rgba(156, 148, 140, .11);
+
+  /* Profondeur — très légère, jamais de grosses ombres */
+  --ombre-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --ombre-2: 0 2px 10px rgba(0, 0, 0, .40);
+  --ombre-3: 0 16px 44px rgba(0, 0, 0, .55);
+
+  /* Zone de saisie attendue (champ obligatoire encore vide) */
+  --attente-fond: #1C1005;
+
+  /* Fond de la feuille d'aperçu : toujours blanc, quel que soit le thème */
+  --papier: #FFFFFF;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. THÈME CLAIR
+   Interface lumineuse et aérée, proche d'un SaaS moderne. L'orange reste un
+   accent : aucun grand aplat orange.
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-theme="clair"] {
+  color-scheme: light;
+
+  --fond:          var(--n-50);
+  --surface:       var(--n-0);
+  --surface-2:     var(--n-25);
+  --surface-3:     var(--n-100);
+  --surface-haute: var(--n-0);
+
+  --texte:      #1B1815;
+  --texte-2:    #5F574F;
+  --texte-3:    #938A82;
+
+  --trait:      rgba(0, 0, 0, .09);
+  --trait-fort: rgba(0, 0, 0, .16);
+  --trait-accent: rgba(255, 121, 0, .35);
+
+  --accent:            var(--o-500);
+  --accent-clair:      var(--o-600);
+  --accent-sourd:      var(--o-200);
+  --accent-texte:      var(--o-700);   /* lisible sur fond clair */
+  --accent-contraste:  #FFFFFF;
+  --accent-voile:      rgba(255, 121, 0, .10);
+  --accent-halo:       rgba(255, 121, 0, .18);
+
+  /* Teintes vives : meilleur contraste sur fond clair */
+  --succes:  var(--vert-vif);    --succes-voile:  rgba(22, 163, 74, .10);
+  --alerte:  var(--ambre-vif);   --alerte-voile:  rgba(217, 119, 6, .10);
+  --critique: var(--rouge-vif);  --critique-voile: rgba(220, 38, 38, .09);
+  --info:    var(--bleu-vif);    --info-voile:    rgba(37, 99, 235, .09);
+  --neutre:  var(--n-500);       --neutre-voile:  rgba(115, 107, 100, .09);
+
+  --ombre-1: 0 1px 2px rgba(28, 25, 23, .06);
+  --ombre-2: 0 2px 10px rgba(28, 25, 23, .08);
+  --ombre-3: 0 14px 38px rgba(28, 25, 23, .12);
+
+  --attente-fond: #FFF8F0;
+  --papier: #FFFFFF;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. THÈME FURTIF
+   Supervision nocturne. L'interface doit s'effacer pour ne laisser lisibles
+   que les informations. Luminosité minimale, orange très discret, états
+   désaturés — mais un incident critique reste identifiable au premier coup
+   d'œil, c'est la contrainte non négociable de ce thème.
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-theme="furtif"] {
+  color-scheme: dark;
+
+  --fond:          #050505;
+  --surface:       #0A0A0A;
+  --surface-2:     #0F0F0F;
+  --surface-3:     #141414;
+  --surface-haute: #191919;
+
+  /* Texte volontairement adouci : pas de blanc pur la nuit.
+     --texte-2 a été remonté de #7A736D à #857E77 : la valeur initiale
+     tombait à 4.37 de contraste, sous le seuil WCAG de 4.5. Le mode furtif
+     doit rester sobre, pas illisible. */
+  --texte:      #B8B2AC;
+  --texte-2:    #8B847D;
+  --texte-3:    #5A544E;
+
+  --trait:      rgba(255, 255, 255, .045);
+  --trait-fort: rgba(255, 255, 255, .09);
+  --trait-accent: rgba(204, 97, 0, .22);
+
+  /* Orange nettement retenu */
+  --accent:            var(--o-800);
+  --accent-clair:      var(--o-700);
+  --accent-sourd:      var(--o-900);
+  --accent-texte:      var(--o-700);
+  --accent-contraste:  #0A0A0A;
+  --accent-voile:      rgba(153, 73, 0, .16);
+  --accent-halo:       rgba(153, 73, 0, .12);
+
+  /* États désaturés — mais toujours distinguables entre eux */
+  --succes:  var(--vert-terne);   --succes-voile:  rgba(74, 124, 89, .12);
+  --alerte:  var(--ambre-terne);  --alerte-voile:  rgba(138, 112, 64, .12);
+  --critique: var(--rouge-terne); --critique-voile: rgba(140, 74, 74, .14);
+  --info:    var(--bleu-terne);   --info-voile:    rgba(74, 95, 124, .12);
+  --neutre:  #4E4842;             --neutre-voile:  rgba(78, 72, 66, .12);
+
+  /* Aucune ombre portée : elles créent du contraste inutile la nuit */
+  --ombre-1: none;
+  --ombre-2: none;
+  --ombre-3: 0 10px 30px rgba(0, 0, 0, .6);
+
+  --attente-fond: #120A03;
+  --papier: #FFFFFF;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. THÈME NOC
+   Écran de supervision, lu de loin. États très saturés et très lisibles,
+   hiérarchie renforcée. C'est le seul thème où les couleurs d'état priment
+   volontairement sur la sobriété.
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-theme="noc"] {
+  color-scheme: dark;
+
+  --fond:          #06080B;
+  --surface:       #0C1016;
+  --surface-2:     #121820;
+  --surface-3:     #1A222C;
+  --surface-haute: #222C38;
+
+  --texte:      #FFFFFF;
+  --texte-2:    #A8B4C2;
+  --texte-3:    #6B7885;
+
+  --trait:      rgba(168, 180, 194, .12);
+  --trait-fort: rgba(168, 180, 194, .22);
+  --trait-accent: rgba(255, 121, 0, .40);
+
+  --accent:            var(--o-500);
+  --accent-clair:      var(--o-300);
+  --accent-sourd:      var(--o-700);
+  --accent-texte:      var(--o-300);
+  --accent-contraste:  #000000;
+  --accent-voile:      rgba(255, 121, 0, .16);
+  --accent-halo:       rgba(255, 121, 0, .34);
+
+  /* États lumineux, lisibles à plusieurs mètres */
+  --succes:  var(--vert-doux);    --succes-voile:  rgba(74, 222, 128, .16);
+  --alerte:  var(--ambre-doux);   --alerte-voile:  rgba(251, 191, 36, .16);
+  --critique: var(--rouge-doux);  --critique-voile: rgba(248, 113, 113, .18);
+  --info:    var(--bleu-doux);    --info-voile:    rgba(96, 165, 250, .16);
+  --neutre:  #6B7885;             --neutre-voile:  rgba(107, 120, 133, .14);
+
+  --ombre-1: 0 1px 3px rgba(0, 0, 0, .5);
+  --ombre-2: 0 3px 14px rgba(0, 0, 0, .55);
+  --ombre-3: 0 18px 50px rgba(0, 0, 0, .7);
+
+  --attente-fond: #1E1206;
+  --papier: #FFFFFF;
+
+  /* Lecture à distance : typographie légèrement agrandie */
+  --t-sm: 13px;  --t-base: 14px;  --t-md: 15px;  --t-lg: 18px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. MODE AUTOMATIQUE
+   Suit le réglage du système d'exploitation. N'agit que si l'utilisateur n'a
+   pas choisi de thème explicite (attribut data-theme absent ou « auto »).
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] {
+    color-scheme: light;
+
+    --fond:          var(--n-50);
+    --surface:       var(--n-0);
+    --surface-2:     var(--n-25);
+    --surface-3:     var(--n-100);
+    --surface-haute: var(--n-0);
+
+    --texte:   #1B1815;
+    --texte-2: #5F574F;
+    --texte-3: #938A82;
+
+    --trait:        rgba(0, 0, 0, .09);
+    --trait-fort:   rgba(0, 0, 0, .16);
+    --trait-accent: rgba(255, 121, 0, .35);
+
+    --accent-clair:     var(--o-600);
+    --accent-sourd:     var(--o-200);
+    --accent-texte:     var(--o-700);
+    --accent-contraste: #FFFFFF;
+    --accent-voile:     rgba(255, 121, 0, .10);
+    --accent-halo:      rgba(255, 121, 0, .18);
+
+    --succes:   var(--vert-vif);   --succes-voile:   rgba(22, 163, 74, .10);
+    --alerte:   var(--ambre-vif);  --alerte-voile:   rgba(217, 119, 6, .10);
+    --critique: var(--rouge-vif);  --critique-voile: rgba(220, 38, 38, .09);
+    --info:     var(--bleu-vif);   --info-voile:     rgba(37, 99, 235, .09);
+    --neutre:   var(--n-500);      --neutre-voile:   rgba(115, 107, 100, .09);
+
+    --ombre-1: 0 1px 2px rgba(28, 25, 23, .06);
+    --ombre-2: 0 2px 10px rgba(28, 25, 23, .08);
+    --ombre-3: 0 14px 38px rgba(28, 25, 23, .12);
+
+    --attente-fond: #FFF8F0;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. TRANSITION DE THÈME
+   Une seule transition, courte, sur les propriétés colorimétriques. Elle est
+   posée le temps du basculement puis retirée par le script : sans cela, elle
+   ralentirait aussi les interactions courantes.
+   ═══════════════════════════════════════════════════════════════════════ */
+.bascule-theme,
+.bascule-theme *,
+.bascule-theme *::before,
+.bascule-theme *::after {
+  transition: background-color var(--duree-theme) ease,
+              border-color var(--duree-theme) ease,
+              color var(--duree-theme) ease,
+              box-shadow var(--duree-theme) ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bascule-theme,
+  .bascule-theme *,
+  .bascule-theme *::before,
+  .bascule-theme *::after {
+    transition: none !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. ÉTATS D'INCIDENT
+   Jamais la couleur seule : chaque état porte aussi une pastille de forme
+   distincte et un libellé. Un daltonien doit pouvoir les différencier.
+   ═══════════════════════════════════════════════════════════════════════ */
+.etat {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--r-full);
+  font-size: var(--t-xs); font-weight: 600;
+  letter-spacing: .02em; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.etat-pastille {
+  width: 7px; height: 7px; flex-shrink: 0;
+  background: currentColor;
+}
+
+/* La forme distingue l'état même sans perception de la couleur */
+.etat-critique .etat-pastille { border-radius: 1px; transform: rotate(45deg); }  /* losange */
+.etat-encours  .etat-pastille { border-radius: 50%; }                            /* cercle */
+.etat-attente  .etat-pastille { border-radius: 50%; background: transparent;
+                                 box-shadow: inset 0 0 0 2px currentColor; }      /* anneau */
+.etat-resolu   .etat-pastille { border-radius: 50%; }                            /* cercle plein */
+.etat-neutre   .etat-pastille { border-radius: 1px; }                            /* carré */
+
+.etat-critique { color: var(--critique); background: var(--critique-voile);
+                 border-color: color-mix(in srgb, var(--critique) 30%, transparent); }
+.etat-encours  { color: var(--accent-texte); background: var(--accent-voile);
+                 border-color: var(--trait-accent); }
+.etat-attente  { color: var(--alerte); background: var(--alerte-voile);
+                 border-color: color-mix(in srgb, var(--alerte) 30%, transparent); }
+.etat-resolu   { color: var(--succes); background: var(--succes-voile);
+                 border-color: color-mix(in srgb, var(--succes) 30%, transparent); }
+.etat-neutre   { color: var(--neutre); background: var(--neutre-voile);
+                 border-color: var(--trait); }
+
+/* Battement très discret, réservé aux incidents réellement actifs */
+.etat-critique.actif .etat-pastille,
+.etat-encours.actif  .etat-pastille {
+  animation: battement 2.4s ease-in-out infinite;
+}
+@keyframes battement {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .etat .etat-pastille { animation: none !important; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9. SÉLECTEUR DE THÈME
+   ═══════════════════════════════════════════════════════════════════════ */
+.theme-zone { position: relative; }
+
+.theme-declencheur {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; cursor: pointer;
+  background: var(--surface-2); color: var(--texte-2);
+  border: 1px solid var(--trait); border-radius: var(--r-full);
+  font-family: var(--police); font-size: var(--t-sm);
+  transition: color var(--duree), border-color var(--duree);
+}
+.theme-declencheur:hover { color: var(--texte); border-color: var(--trait-fort); }
+.theme-declencheur svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.theme-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 300;
+  min-width: 208px; padding: 6px;
+  background: var(--surface-haute);
+  border: 1px solid var(--trait-fort); border-radius: var(--r);
+  box-shadow: var(--ombre-3);
+  display: none;
+}
+.theme-menu.ouvert { display: block; }
+.theme-menu-titre {
+  padding: 7px 10px 8px;
+  font-size: var(--t-2xs); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--texte-3); font-weight: 700;
+}
+.theme-option {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; cursor: pointer; text-align: left;
+  background: none; border: 0; border-radius: var(--r-sm);
+  color: var(--texte-2); font-family: var(--police); font-size: var(--t-base);
+  transition: background var(--duree-rapide), color var(--duree-rapide);
+}
+.theme-option:hover { background: var(--surface-3); color: var(--texte); }
+.theme-option.actif { color: var(--accent-texte); background: var(--accent-voile); }
+.theme-option-glyphe { width: 16px; text-align: center; flex-shrink: 0; }
+.theme-option-nom { flex: 1; }
+.theme-option-detail {
+  display: block; font-size: var(--t-xs); color: var(--texte-3); margin-top: 1px;
+}
+.theme-option.actif .theme-option-detail { color: var(--accent-texte); opacity: .75; }
+
+/* Aperçu de l'ambiance : trois pastilles reprenant les surfaces du thème */
+.theme-apercu { display: flex; gap: 2px; flex-shrink: 0; }
+.theme-apercu span {
+  width: 8px; height: 14px; border-radius: 2px;
+  border: 1px solid rgba(128, 128, 128, .35);
+}
+.tap-clair-1  { background: #F7F5F3; }
+.tap-clair-2  { background: #FFFFFF; }
+.tap-clair-3  { background: #FF7900; }
+.tap-sombre-1 { background: #0A0908; }
+.tap-sombre-2 { background: #191614; }
+.tap-sombre-3 { background: #FF7900; }
+.tap-furtif-1 { background: #050505; }
+.tap-furtif-2 { background: #0F0F0F; }
+.tap-furtif-3 { background: #994900; }
+.tap-noc-1    { background: #06080B; }
+.tap-noc-2    { background: #121820; }
+.tap-noc-3    { background: #FF7900; }
+.tap-auto-1   { background: #F7F5F3; }
+.tap-auto-2   { background: #191614; }
+.tap-auto-3   { background: #FF7900; }

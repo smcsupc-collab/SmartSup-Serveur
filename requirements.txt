@@ -1,0 +1,23 @@
+# ─── SmartSup v4 — Dépendances ───────────────────────────────────────────────
+# Installation : pip install -r requirements.txt --break-system-packages
+
+# Core
+flask>=3.0,<4
+pandas>=2.0,<3
+openpyxl>=3.1,<4
+pyperclip>=1.8,<2
+
+# Windows uniquement (Outlook COM)
+pywin32>=306; sys_platform == 'win32'
+
+# Scheduler — retiré en v5 : jamais importé dans le code
+# apscheduler>=3.10,<4
+
+# Export PDF (optionnel — nécessite wkhtmltopdf installé sur le système)
+# pdfkit>=1.0
+
+# WhatsApp (option A — sans compte business)
+# pywhatkit>=5.4
+
+# WhatsApp (option B — compte Twilio Business requis)
+# twilio>=8.0

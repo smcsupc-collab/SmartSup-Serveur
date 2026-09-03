@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartSup — Incidents</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/theme.css">
+<link rel="stylesheet" href="/static/style.css">
+  <script>
+    // Appliqué avant le rendu : sans cela, la page s'afficherait brièvement
+    // dans le thème par défaut avant de basculer.
+    (function () {
+      try {
+        var t = localStorage.getItem('smartsup-theme') || 'sombre';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'sombre');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="bg-grid"></div>
+
+<div class="shell">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span class="brand-name">SmartSup</span>
+      </div>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        NOC — Orange Guinée
+      </div>
+
+      <!-- ── TIMER D'INCIDENT (XXL #6) ── -->
+      <div class="incident-timer" id="incident-timer" style="display:none">
+        <span class="timer-dot"></span>
+        <span class="timer-label">En cours</span>
+        <span class="timer-value" id="timer-display">00:00</span>
+        <button class="timer-close-btn" onclick="stopTimer()" title="Clore l'incident">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+          Clore
+        </button>
+      </div>
+    </div>
+    <h1 class="hero-title">Communication Incidents</h1>
+    <p class="hero-sub">Génération automatisée des avis d'incidents</p>
+  </header>
+
+  <!-- Section Navigation -->
+  <nav class="section-nav">
+    <button class="section-tab active" id="stab-services" onclick="switchSection('services')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Incidents Services
+    </button>
+    <button class="section-tab" id="stab-ran_nbn" onclick="switchSection('ran_nbn')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M1 6s0-2 2-2 2 2 2 2l4 8s0 2 2 2 2-2 2-2l2-4s0-2 2-2 2 2 2 2l4 8s0 2 2 2 2-2 2-2"/></svg>
+      Coupure RAN/NBN
+    </button>
+    <button class="section-tab" id="stab-stats" onclick="switchSection('stats')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tableau de bord
+    </button>
+    <button class="section-tab" id="stab-saisie" onclick="switchSection('saisie')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Saisie rapide
+    </button>
+    <button class="section-tab" id="stab-admin" onclick="switchSection('admin')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Administration
+    </button>
+
+    <button class="section-tab" id="stab-rapports" onclick="switchSection('rapports')">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      Rapports
+    </button>
+
+    <!-- Sélecteur de thème — n'affecte que l'interface. Les e-mails et les
+         rapports conservent leur charte propre (rendus en iframe). -->
+    <div class="theme-zone" id="theme-zone">
+      <button class="theme-declencheur" id="theme-declencheur"
+              aria-haspopup="true" aria-expanded="false" title="Apparence">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/>
+             <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+        <span id="theme-nom">Sombre</span>
+      </button>
+      <div class="theme-menu" id="theme-menu" role="menu">
+        <div class="theme-menu-titre">Apparence</div>
+      </div>
+    </div>
+
+    <!-- Jauge de complétude de la saisie rapide -->
+    <div class="sr-jauge" id="sr-jauge" style="margin-left:auto">
+      <span class="sr-jauge-texte" id="sr-jauge-texte">—</span>
+      <div class="sr-jauge-piste"><div class="sr-jauge-barre" id="sr-jauge-barre"></div></div>
+    </div>
+  </nav>
+
+  <!-- Main layout -->
+  <div class="main-layout">
+
+    <!-- ═══════════════════════════════════════
+         SECTION TICKETS (J2)
+    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════════════
+         SAISIE RAPIDE — remplace l'ancienne section « Tickets »
+
+         Le ticket est créé dans l'outil du groupe : on colle sa référence et
+         le service, tout le reste se pré-remplit. Le module de ticketing
+         interne (Kanban, statuts opérationnels, MTTR, escalade) est retiré,
+         conformément au cadrage : « ne pas recréer le système de tickets ».
+
+         L'aperçu affiché ici est le rendu produit par le SERVEUR
+         (POST /api/v5/preview) et inséré tel quel. Il porte donc la charte
+         e-mail (#FF6D00), volontairement distincte du thème de l'application
+         (#FF7900). Ne jamais styler cet aperçu depuis style.css.
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="fullwidth-section" id="section-saisie" style="display:none">
+
+      <div class="sr-grille">
+
+        <!-- ────────────── Volet de saisie ────────────── -->
+        <div class="sr-volet">
+
+          <div class="sr-rubrique">Coller <em>01</em></div>
+          <div class="sr-collage">
+            <div class="sr-puits" id="sr-puits-ticket">
+              <input id="sr-ticket" placeholder="N° ticket" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="sr-puits" id="sr-puits-service">
+              <input id="sr-service" placeholder="Nom du service…" autocomplete="off" spellcheck="false">
+              <div class="sr-suggestions" id="sr-suggestions"></div>
+            </div>
+          </div>
+
+          <div class="sr-segments" id="sr-segments"></div>
+
+          <div class="sr-rubrique">Compléter <em>02</em></div>
+          <div id="sr-formulaire"></div>
+
+          <!-- Preuves : le collage direct reprend le geste déjà pratiqué dans
+               Outlook (Ctrl+V d'une capture), plutôt que d'imposer un
+               parcours d'import de fichier. -->
+          <div class="sr-rubrique">Preuves <em>03</em></div>
+          <div class="sr-preuves" id="sr-preuves" tabindex="0">
+            <div class="sr-preuves-vide" id="sr-preuves-vide">
+              Coller une capture (Ctrl+V) ou déposer une image ici
+            </div>
+            <div class="sr-galerie" id="sr-galerie"></div>
+          </div>
+
+        </div>
+
+        <!-- ────────────── Volet d'aperçu ────────────── -->
+        <div class="sr-volet sr-volet-apercu">
+
+          <div class="sr-rubrique">Aperçu <em>04</em></div>
+
+          <!-- Les trois sorties dérivées (SMS, rapport, ligne de suivi)
+               remplacent l'outil autonome Web_SMS_Sup : elles sont produites
+               depuis les données structurées, sans analyse de texte. -->
+          <div class="sr-sorties" id="sr-sorties">
+            <button class="sr-sortie actif" data-s="mail">E-mail</button>
+            <button class="sr-sortie" data-s="sms">SMS</button>
+            <button class="sr-sortie" data-s="rapport">Rapport court</button>
+            <button class="sr-sortie" data-s="ligne">Ligne de suivi</button>
+          </div>
+
+          <div class="sr-enveloppe" id="sr-enveloppe"></div>
+
+          <!-- Rendu serveur : iframe isolée pour que le thème de
+               l'application ne puisse pas contaminer la charte e-mail -->
+          <iframe id="sr-apercu" class="sr-apercu" title="Aperçu du message"></iframe>
+          <pre class="sr-texte" id="sr-texte" style="display:none"></pre>
+
+          <div class="sr-actions">
+            <button class="btn btn-primary" id="sr-btn-enregistrer">Enregistrer l'incident</button>
+            <button class="btn" id="sr-btn-copier">Copier le message</button>
+            <button class="btn" id="sr-btn-texte">Copier en texte</button>
+            <button class="btn" id="sr-btn-vider">Vider</button>
+          </div>
+
+          <div class="sr-glose" id="sr-glose"></div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ADMINISTRATION — paramétrage complet
+
+         Cet écran se construit tout seul à partir du descripteur renvoyé par
+         GET /api/v5/admin/schema. Rendre une nouvelle table administrable ne
+         demande donc aucune modification de cette page : il suffit d'ajouter
+         une entrée dans TABLES (db/api_admin.py).
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="fullwidth-section" id="section-admin" style="display:none">
+
+      <div class="adm-entete">
+        <div class="adm-onglets" id="adm-onglets"></div>
+        <div class="adm-outils">
+          <input class="adm-filtre" id="adm-filtre" placeholder="Filtrer…" autocomplete="off">
+          <button class="btn btn-primary" id="adm-btn-ajouter">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="adm-aide" id="adm-aide"></div>
+      <div class="adm-contenu" id="adm-contenu"></div>
+
+      <!-- Formulaire d'édition — remplace le bouton « Éditer » qui renvoyait
+           auparavant l'utilisateur vers l'API brute (point B3 de l'audit) -->
+      <div class="adm-voile" id="adm-voile" style="display:none">
+        <div class="adm-fenetre">
+          <div class="adm-fenetre-titre" id="adm-fenetre-titre">Modifier</div>
+          <div class="adm-formulaire" id="adm-formulaire"></div>
+          <div class="adm-fenetre-actions">
+            <button class="btn btn-primary" id="adm-btn-valider">Enregistrer</button>
+            <button class="btn" id="adm-btn-annuler">Annuler</button>
+            <button class="btn adm-btn-danger" id="adm-btn-supprimer">Supprimer</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         RAPPORTS — fin de shift, hebdomadaire, mensuel
+
+         Les trois rapports sont générés par le serveur depuis les incidents
+         déjà documentés : aucune ressaisie. Le rendu est affiché dans une
+         iframe pour rester isolé du thème de l'application — ce document
+         circule par e-mail et sur papier, il a sa propre mise en forme.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="fullwidth-section" id="section-rapports" style="display:none">
+
+      <div class="rap-entete">
+        <div class="rap-onglets">
+          <button class="rap-onglet actif" data-r="shift">Fin de shift</button>
+          <button class="rap-onglet" data-r="hebdomadaire">Hebdomadaire</button>
+          <button class="rap-onglet" data-r="mensuel">Mensuel</button>
+        </div>
+        <div class="rap-outils">
+          <input type="date" id="rap-date" title="Régénérer un rapport passé">
+          <button class="btn" id="rap-btn-actualiser">Actualiser</button>
+          <button class="btn" id="rap-btn-imprimer">Imprimer</button>
+          <button class="btn" id="rap-btn-excel">Exporter Excel</button>
+          <button class="btn btn-primary" id="rap-btn-mail">Envoyer par mail</button>
+        </div>
+      </div>
+
+      <div class="rap-indicateurs" id="rap-indicateurs"></div>
+      <iframe id="rap-rendu" class="rap-rendu" title="Rapport"></iframe>
+
+    </section>
+
+    <!-- ═══ SECTION TABLEAU DE BORD (XXL #4) ═══ -->
+    <section class="stats-section" id="section-stats" style="display:none">
+      <div class="stats-header">
+        <div class="stats-title-row">
+          <h2 class="stats-main-title">
+            <svg viewBox="0 0 24 24" width="20" height="20" style="vertical-align:-4px;margin-right:8px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Tableau de bord Incidents
+          </h2>
+          <button class="btn-ghost" onclick="loadStats()" style="font-size:.75rem">
+            <svg viewBox="0 0 24 24" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Actualiser
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="stats-kpi-row" id="stats-kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-icon-orange">
+            <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-label">Services catalogués</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-icon-green">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpi-sent-today">—</div>
+            <div class="kpi-label">Envois aujourd'hui</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-icon-amber">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpi-sent-month">—</div>
+            <div class="kpi-label">Envois ce mois</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-icon-blue">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpi-top-mode">—</div>
+            <div class="kpi-label">Mode le plus utilisé</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="stats-charts-row">
+
+        <!-- Top services par historique -->
+        <div class="stats-card" style="flex:1.2">
+          <div class="stats-card-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+            Top 10 services par volume d'historique
+          </div>
+          <div id="chart-top-services" class="chart-bar-container"></div>
+        </div>
+
+        <!-- Top causes -->
+        <div class="stats-card" style="flex:1">
+          <div class="stats-card-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Top 10 causes d'incidents
+          </div>
+          <div id="chart-top-causes" class="chart-bar-container"></div>
+        </div>
+
+      </div>
+
+      <!-- Historique des envois récents dans le dashboard -->
+      <div class="stats-card" style="margin-top:.75rem">
+        <div class="stats-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+            Derniers incidents envoyés
+          </span>
+          <button class="btn-ghost" style="font-size:.72rem;padding:.2rem .6rem" onclick="openHistory()">Voir tout</button>
+        </div>
+        <div id="stats-recent-log" style="margin-top:.5rem">
+          <div style="color:var(--text-3);font-size:.8rem;text-align:center;padding:1rem">Chargement…</div>
+        </div>
+      </div>
+
+      <!-- Export PDF -->
+      <div class="stats-card" style="margin-top:.75rem">
+        <div class="stats-card-title">
+          <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Export rapport de clôture (XXL #7)
+        </div>
+        <div class="pdf-export-row">
+          <div class="pdf-fields">
+            <input type="text" id="pdf-service" class="field-input" placeholder="Service / Lien impacté" style="flex:2">
+            <input type="text" id="pdf-ticket"  class="field-input" placeholder="N° Ticket" style="flex:1">
+            <input type="datetime-local" id="pdf-hd" class="field-input" style="flex:1">
+            <input type="datetime-local" id="pdf-hf" class="field-input" style="flex:1">
+          </div>
+          <div class="pdf-fields" style="margin-top:.5rem">
+            <input type="text" id="pdf-cause"  class="field-input" placeholder="Cause" style="flex:2">
+            <input type="text" id="pdf-action" class="field-input" placeholder="Action corrective" style="flex:2">
+          </div>
+          <button class="btn-primary" style="margin-top:.6rem;width:100%" onclick="exportPdf()">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Générer le rapport PDF
+          </button>
+          <div class="pdf-hint">Le rapport est généré côté serveur et téléchargé automatiquement.</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ FORMULAIRE ═══ -->
+    <section class="form-col">
+
+      <!-- ══ SECTION: INCIDENTS SERVICES ══ -->
+      <div id="section-services" class="section-wrap">
+
+      <!-- Coller l'objet du mail -->
+      <div class="card card-paste">
+        <div class="card-label">
+          <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Coller l'objet du mail ici (Ctrl+V)
+        </div>
+        <div class="paste-wrap">
+          <textarea id="subject-paste" class="field-input paste-textarea"
+                 placeholder="Ex: Incident [Orange Money add-on / Bank to Wallet] || 2606Q77458&#10;&#10;→ Colle l'objet ici, le service et le ticket seront extraits automatiquement"
+                 oninput="parseSubject(this.value)"
+                 onpaste="setTimeout(() => parseSubject(this.value), 50)"
+                 rows="2"></textarea>
+          <button class="btn-clear-paste" onclick="clearPaste()" title="Effacer">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div id="parse-badges" class="parse-badges" style="display:none"></div>
+      </div>
+
+      <!-- Type d'avis -->
+      <div class="card">
+        <div class="card-label">Type d'avis</div>
+        <div class="type-toggle">
+          <button class="type-btn active" id="btn-debut" onclick="setType('debut')">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Début
+          </button>
+          <button class="type-btn" id="btn-avancement" onclick="setType('avancement')">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Point d'avancement
+          </button>
+          <button class="type-btn" id="btn-fin" onclick="setType('fin')">
+            <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+            Fin
+          </button>
+          <button class="type-btn" id="btn-non_avere" onclick="setType('non_avere')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Non avéré
+          </button>
+        </div>
+      </div>
+
+      <!-- Service -->
+      <div class="card">
+        <div class="card-label">Service impacté</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="service-input" class="field-input"
+                 placeholder="Rechercher un service…"
+                 autocomplete="off"
+                 oninput="filterServices(this.value)"
+                 onfocus="filterServices(this.value)">
+          <div class="autocomplete-dropdown" id="service-dropdown"></div>
+        </div>
+        <div class="service-meta" id="service-meta" style="display:none">
+          <span class="meta-badge badge-tmc" id="meta-tmc"></span>
+          <span class="meta-badge badge-priority" id="meta-priority"></span>
+        </div>
+      </div>
+
+      <!-- Ticket & Priorité -->
+      <div class="card">
+        <div class="card-label">Ticket &amp; Priorité</div>
+        <div class="row-2">
+          <div class="field-group">
+            <label class="field-label">N° Ticket</label>
+            <input type="text" id="ticket" class="field-input"
+                   placeholder="ex: 2601Q38109"
+                   oninput="schedulePreview()">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Priorité</label>
+            <select id="priority" class="field-input" onchange="schedulePreview()">
+              <option value="P1">P1</option>
+              <option value="P2">P2</option>
+              <option value="P3">P3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horaires -->
+      <div class="card">
+        <div class="card-label">Horaires</div>
+        <div class="row-2">
+          <div class="field-group">
+            <label class="field-label">
+              Heure de début (HD)
+              <span class="date-warning" id="hd-warning" title="Date pré-remplie — pensez à vérifier">⚠️ À vérifier</span>
+            </label>
+            <input type="datetime-local" id="hd" class="field-input"
+                   oninput="schedulePreview()">
+          </div>
+          <div class="field-group fin-only" id="hf-group" style="display:none">
+            <label class="field-label">Heure de fin (HF)</label>
+            <input type="datetime-local" id="hf" class="field-input"
+                   oninput="schedulePreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="card">
+        <div class="card-label">Description</div>
+        <textarea id="description" class="field-input field-textarea"
+                  placeholder="Description de l'impact sur le service…"
+                  rows="3"
+                  oninput="schedulePreview()"></textarea>
+      </div>
+
+      <!-- Cause -->
+      <div class="card">
+        <div class="card-label">Cause de l'incident</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="cause" class="field-input"
+                 placeholder="Investigations en cours côté…"
+                 autocomplete="off"
+                 oninput="filterCauses(this.value); schedulePreview()"
+                 onfocus="showCauseDropdown()">
+          <div class="autocomplete-dropdown" id="cause-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Action (Fin only) -->
+      <div class="card fin-only" id="action-card" style="display:none">
+        <div class="card-label">Action corrective</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="action" class="field-input"
+                 placeholder="Action corrective effectuée pour rétablir le service…"
+                 autocomplete="off"
+                 oninput="filterActions(this.value); schedulePreview()"
+                 onfocus="showActionDropdown()">
+          <div class="autocomplete-dropdown" id="action-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Observation -->
+      <div class="card">
+        <div class="card-label">Observation</div>
+        <div id="obs-buttons">
+          <div class="obs-toggle">
+            <button class="obs-btn obs-red active" id="obs-indispo"
+                    data-val="Service Indisponible" onclick="setObs(this)">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/></svg>
+              Indisponible
+            </button>
+            <button class="obs-btn obs-green" id="obs-dispo"
+                    data-val="Service Disponible" onclick="setObs(this)">
+              <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01" stroke-width="2"/></svg>
+              Disponible
+            </button>
+          </div>
+        </div>
+        <input type="text" id="obs-text" class="field-input" style="margin-top:.6rem"
+               placeholder="Modifier ou saisir une observation personnalisée…"
+               oninput="observation = this.value; schedulePreview()">
+        <div id="obs-libre" style="display:none"></div>
+      </div>
+
+      <!-- Boutons -->
+      <!-- Bouton timer Services -->
+      <div class="timer-start-row" id="timer-start-row-svc">
+        <button class="btn-timer-start" id="btn-start-timer-svc" onclick="startTimer()">
+          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Démarrer le chrono incident
+        </button>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" onclick="openInOutlook()">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Ouvrir dans Outlook
+        </button>
+        <button class="btn-secondary" onclick="copySms()">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copier SMS
+        </button>
+      </div>
+      <div class="action-row-secondary">
+        <button class="btn-ghost" onclick="sendMail()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Envoyer directement
+        </button>
+        <button class="btn-ghost" onclick="openHistory()">
+          <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+          Historique
+        </button>
+        <button class="btn-ghost" onclick="saveCurrentAsTemplate()">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+          Sauver modèle
+        </button>
+        <button class="btn-ghost" onclick="openTemplates()">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Modèles
+        </button>
+        <button class="btn-ghost btn-settings" onclick="openSettings()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Paramètres
+        </button>
+      </div>
+
+      </div><!-- /#section-services -->
+
+      <!-- ══ SECTION: COUPURE RAN/NBN ══ -->
+      <div id="section-ran_nbn" class="section-wrap" style="display:none">
+
+      <!-- Sous-type RAN / NBN -->
+      <div class="card">
+        <div class="card-label">Type de coupure</div>
+        <div class="sub-toggle">
+          <button class="sub-btn active" id="rbtn-ran" onclick="setSubType('ran')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M1 6s0-2 2-2 2 2 2 2l4 8s0 2 2 2 2-2 2-2l2-4s0-2 2-2 2 2 2 2l4 8s0 2 2 2 2-2 2-2"/></svg>
+            RAN (Radio)
+          </button>
+          <button class="sub-btn" id="rbtn-nbn" onclick="setSubType('nbn')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            NBN (Transmission)
+          </button>
+        </div>
+      </div>
+
+      <!-- Nature de l'incident (RAN uniquement) -->
+      <div class="card" id="ran-kind-card">
+        <div class="card-label">Nature de l'incident</div>
+        <div class="sub-toggle">
+          <button class="sub-btn active" id="rkind-coupure" onclick="setRanKind('coupure')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Coupure
+          </button>
+          <button class="sub-btn" id="rkind-instabilite" onclick="setRanKind('instabilite')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Instabilité
+          </button>
+        </div>
+      </div>
+
+      <!-- Type d'avis -->
+      <div class="card">
+        <div class="card-label">Type d'avis</div>
+        <div class="type-toggle">
+          <button class="type-btn active" id="r-btn-debut" onclick="setTypeRan('debut')">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Début
+          </button>
+          <button class="type-btn" id="r-btn-avancement" onclick="setTypeRan('avancement')">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Point d'avancement
+          </button>
+          <button class="type-btn" id="r-btn-fin" onclick="setTypeRan('fin')">
+            <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+            Fin
+          </button>
+          <button class="type-btn" id="r-btn-non_avere" onclick="setTypeRan('non_avere')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Non avéré
+          </button>
+        </div>
+      </div>
+
+      <!-- Sites / Lien impacté -->
+      <div class="card" id="ran-field" style="display:block">
+        <div class="card-label" id="ran-field-label">Site coupé</div>
+        <input type="text" id="ran-sites-text" class="field-input"
+               placeholder="Ex: SIG30843_MAKITIN + 26 sites rattachés"
+               oninput="ranSiteChanged()"
+               onpaste="setTimeout(ranSiteChanged, 10)">
+        <div class="ran-checks" style="margin-top:.6rem">
+          <label class="check-pill"><input type="checkbox" id="chk-voix" checked onchange="schedulePreview()"> Voix</label>
+          <label class="check-pill"><input type="checkbox" id="chk-sms" checked onchange="schedulePreview()"> SMS</label>
+          <label class="check-pill"><input type="checkbox" id="chk-data" checked onchange="schedulePreview()"> Data</label>
+          <label class="check-pill"><input type="checkbox" id="chk-ussd" checked onchange="schedulePreview()"> USSD</label>
+        </div>
+        <div class="field-hint">Colle le nom du site — la description et l'objet se rempliront automatiquement</div>
+      </div>
+
+      <!-- Nature de l'incident (NBN uniquement) -->
+      <div class="card" id="nbn-kind-card" style="display:none">
+        <div class="card-label">Nature de l'incident</div>
+        <div class="sub-toggle">
+          <button class="sub-btn active" id="nkind-coupure" onclick="setNbnKind('coupure')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Coupure
+          </button>
+          <button class="sub-btn" id="nkind-baisse" onclick="setNbnKind('baisse_debit')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+            Baisse de débit
+          </button>
+        </div>
+      </div>
+
+      <div class="card" id="nbn-field" style="display:none">
+        <div class="card-label">Lien Impacté <span style="font-size:.75rem;color:var(--text-3)">(sans "NBN")</span></div>
+        <input type="text" id="nbn-lien" class="field-input"
+               placeholder="ex: LABE-KOUNDARA"
+               oninput="nbnLienChanged()"
+               onpaste="setTimeout(nbnLienChanged, 10)">
+        <div class="field-hint">Le préfixe NBN est ajouté automatiquement dans l'objet et le SMS</div>
+      </div>
+
+      <!-- Ticket & Priorité -->
+      <div class="card">
+        <div class="card-label">Ticket &amp; Priorité</div>
+        <div class="row-2">
+          <div class="field-group">
+            <label class="field-label">N° Ticket</label>
+            <input type="text" id="r-ticket" class="field-input"
+                   placeholder="ex: 2601Q38109"
+                   oninput="schedulePreview()">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Priorité</label>
+            <select id="r-priority" class="field-input" onchange="schedulePreview()">
+              <option value="P1">P1</option>
+              <option value="P2">P2</option>
+              <option value="P3">P3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horaires -->
+      <div class="card">
+        <div class="card-label">Horaires</div>
+        <div class="row-2">
+          <div class="field-group">
+            <label class="field-label">Heure de début (HD)</label>
+            <input type="datetime-local" id="r-hd" class="field-input" oninput="schedulePreview()">
+          </div>
+          <div class="field-group r-fin-only" id="r-hf-group" style="display:none">
+            <label class="field-label">Heure de fin (HF)</label>
+            <input type="datetime-local" id="r-hf" class="field-input" oninput="schedulePreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="card">
+        <div class="card-label">Description <span style="font-weight:400;color:var(--text-3);font-size:.78rem">(auto-rempli)</span></div>
+        <textarea id="r-description" class="field-input field-textarea"
+                  placeholder="Nous enregistrons la coupure du site…"
+                  rows="2"
+                  oninput="schedulePreview()"></textarea>
+      </div>
+
+      <!-- Cause -->
+      <div class="card">
+        <div class="card-label">Cause de l'incident</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="r-cause" class="field-input"
+                 placeholder="Investigations en cours côté…"
+                 autocomplete="off"
+                 oninput="filterRanCauses(this.value); schedulePreview()"
+                 onfocus="showRanCauseDropdown()">
+          <div class="autocomplete-dropdown" id="r-cause-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Zone impactée -->
+      <div class="card">
+        <div class="card-label">Zone impactée <span style="font-weight:400;color:var(--text-3);font-size:.78rem">(pour Notification &amp; WhatsApp)</span></div>
+        <input type="text" id="r-zone" class="field-input"
+               placeholder="ex: Kankan, Labé, Nzérékoré…"
+               oninput="schedulePreview()">
+      </div>
+
+      <!-- Action (Fin only) -->
+      <div class="card r-fin-only" id="r-action-card" style="display:none">
+        <div class="card-label">Action corrective</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="r-action" class="field-input"
+                 placeholder="Action corrective effectuée…"
+                 autocomplete="off"
+                 oninput="filterRanActions(this.value); schedulePreview()"
+                 onfocus="showRanActionDropdown()">
+          <div class="autocomplete-dropdown" id="r-action-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Observation -->
+      <div class="card">
+        <div class="card-label">Observation <span style="font-weight:400;color:var(--text-3);font-size:.78rem">(auto-rempli)</span></div>
+        <div class="obs-toggle" id="r-obs-buttons">
+          <button class="obs-btn obs-red active" id="r-obs-down"
+                  data-val="Site DOWN" onclick="setRanObs(this)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/></svg>
+            Site DOWN
+          </button>
+          <button class="obs-btn obs-green" id="r-obs-up"
+                  data-val="Site UP" onclick="setRanObs(this)">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01" stroke-width="2"/></svg>
+            Site UP
+          </button>
+          <button class="obs-btn" id="r-obs-instable"
+                  style="background:rgba(255,152,0,.12);border-color:rgba(255,152,0,.3);color:#FF9800"
+                  data-val="Site Instable" onclick="setRanObs(this)">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-width="2"/></svg>
+            Site Instable
+          </button>
+        </div>
+        <input type="text" id="r-obs-text" class="field-input" style="margin-top:.6rem"
+               placeholder="Modifier l'observation…"
+               oninput="schedulePreview()">
+      </div>
+
+      <!-- Boutons -->
+      <!-- Bouton timer RAN/NBN -->
+      <div class="timer-start-row" id="timer-start-row-ran">
+        <button class="btn-timer-start" id="btn-start-timer-ran" onclick="startTimer()">
+          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Démarrer le chrono incident
+        </button>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" onclick="openInOutlook()">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Ouvrir dans Outlook
+        </button>
+        <button class="btn-secondary" onclick="copySms()">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copier SMS
+        </button>
+      </div>
+      <div class="action-row-secondary">
+        <button class="btn-ghost" onclick="sendMail()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Envoyer directement
+        </button>
+        <button class="btn-ghost" onclick="openHistory()">
+          <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+          Historique
+        </button>
+        <button class="btn-ghost" onclick="saveCurrentAsTemplate()">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+          Sauver modèle
+        </button>
+        <button class="btn-ghost" onclick="openTemplates()">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Modèles
+        </button>
+        <button class="btn-ghost btn-settings" onclick="openSettings()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Paramètres
+        </button>
+      </div>
+
+      </div><!-- /#section-ran_nbn -->
+
+      <div class="toast" id="toast"></div>
+
+    </section>
+
+    <!-- ═══ PRÉVISUALISATION ═══ -->
+    <section class="preview-col">
+      <div class="preview-card">
+
+        <div class="preview-tabs">
+          <button class="preview-tab active" id="tab-mail" onclick="switchTab('mail')">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Aperçu Mail
+          </button>
+          <button class="preview-tab" id="tab-sms" onclick="switchTab('sms')">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Web SMS
+          </button>
+          <!-- Fix #5 : onglet Notification visible en mode Services ET RAN/NBN -->
+          <button class="preview-tab" id="tab-notif" onclick="switchTab('notif')">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notification
+          </button>
+          <button class="preview-tab" id="tab-multigroupe" onclick="switchTab('multigroupe')">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Envoi réglementaire
+          </button>
+          <button class="preview-tab" id="tab-whatsapp" onclick="switchTab('whatsapp')" style="display:none">
+            <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            Communication WhatsApp
+          </button>
+        </div>
+
+        <div class="preview-subject">
+          <span class="subject-label">Objet :</span>
+          <span id="subject-text" class="subject-value" contenteditable="true" spellcheck="false"
+                oninput="_onSubjectInput()">—</span>
+        </div>
+
+        <!-- Mail -->
+        <div class="preview-pane" id="pane-mail">
+          <div class="preview-toolbar">
+            <span class="preview-edit-hint">✏️ Cliquez pour modifier</span>
+            <button class="btn-reset-preview" onclick="resetMailPreview()" title="Réinitialiser">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Réinitialiser
+            </button>
+          </div>
+          <div class="mail-frame" id="mail-html-preview"
+               contenteditable="true" spellcheck="false"
+               oninput="_onMailInput()">
+            <div class="preview-empty">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <p>Sélectionnez un service et renseignez le ticket pour voir l'aperçu</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification d'incident (Services ET RAN/NBN) -->
+        <div class="preview-pane hidden" id="pane-notif">
+
+          <!-- Champs extra visibles uniquement en mode Services (Fix #5) -->
+          <div id="notif-services-fields" style="display:none;margin-bottom:.75rem">
+            <div class="row-2" style="gap:.5rem">
+              <div class="field-group">
+                <label class="field-label" style="font-size:.75rem">Zone impactée (Notif)</label>
+                <input type="text" id="notif-zone" class="field-input"
+                       placeholder="ex: Conakry, Kindia…"
+                       oninput="schedulePreview()">
+              </div>
+              <div class="field-group">
+                <label class="field-label" style="font-size:.75rem">Observation (Notif)</label>
+                <input type="text" id="notif-observation" class="field-input"
+                       placeholder="Site Instable / Stable…"
+                       oninput="schedulePreview()">
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-subject">
+            <span class="subject-label">Objet :</span>
+            <span id="notif-subject-text" class="subject-value" contenteditable="true" spellcheck="false"
+                  oninput="_onNotifSubjectInput()">—</span>
+          </div>
+          <div class="preview-toolbar">
+            <span class="preview-edit-hint">✏️ Cliquez pour modifier</span>
+            <button class="btn-reset-preview" onclick="resetNotifPreview()" title="Réinitialiser">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Réinitialiser
+            </button>
+          </div>
+          <div class="mail-frame" id="notif-mail-preview"
+               contenteditable="true" spellcheck="false"
+               oninput="_onNotifMailInput()">
+            <div class="preview-empty">
+              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <p>La notification apparaîtra ici</p>
+            </div>
+          </div>
+          <!-- Actions notification -->
+          <div class="action-row" style="margin-top:.75rem">
+            <button class="btn-primary" onclick="openNotifInOutlook()">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Ouvrir Notification
+            </button>
+            <button class="btn-secondary" onclick="copyNotifSms()">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copier SMS Notif
+            </button>
+          </div>
+          <!-- Boucle mail notification séparée -->
+          <div class="notif-mail-loop" style="margin-top:.6rem">
+            <div class="notif-mail-loop-label">
+              <svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Boucle notification séparée
+            </div>
+            <div class="notif-mail-loop-row">
+              <button class="btn-notif-loop" onclick="sendNotifMailDirect()">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Envoyer mail notif (Outlook)
+              </button>
+              <button class="btn-notif-loop btn-notif-loop-ghost" onclick="sendNotifMailDirect(false)">
+                <svg viewBox="0 0 24 24" width="13" height="13"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Envoyer direct
+              </button>
+            </div>
+            <div class="notif-mail-hint">
+              Utilise la liste <strong>Destinataires Notification</strong> (configurée dans Paramètres).
+            </div>
+          </div>
+        </div>
+
+        <!-- Communication WhatsApp (RAN/NBN uniquement) — en attente du format -->
+        <div class="preview-pane hidden" id="pane-whatsapp">
+          <div class="preview-toolbar">
+            <span class="preview-edit-hint">✏️ Cliquez pour modifier</span>
+            <button class="btn-reset-preview" onclick="resetWhatsappPreview()" title="Réinitialiser">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Réinitialiser
+            </button>
+          </div>
+          <div class="sms-frame" id="whatsapp-text-preview"
+               contenteditable="true" spellcheck="false"
+               oninput="_onWhatsappInput()">
+            <div class="preview-empty">
+              <p>Le texte WhatsApp apparaîtra ici</p>
+            </div>
+          </div>
+          <button class="copy-sms-inline" onclick="copyWhatsapp()">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copier
+          </button>
+        </div>
+
+        <!-- ── ENVOI RÉGLEMENTAIRE MULTI-GROUPE (XXL #3) ── -->
+        <div class="preview-pane hidden" id="pane-multigroupe">
+          <div class="multigroupe-header">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Envoi réglementaire — 3 groupes simultanés
+          </div>
+          <div class="multigroupe-grid">
+            <!-- Groupe 1 : Com Incident & TP OGN -->
+            <div class="mg-card" id="mg-card-1">
+              <div class="mg-card-header">
+                <span class="mg-badge mg-badge-full">Détail complet</span>
+                <span class="mg-card-name">Com Incident &amp; TP OGN</span>
+              </div>
+              <div class="mg-preview" id="mg-preview-1">—</div>
+              <div class="mg-actions">
+                <button class="btn-mg-send" onclick="sendMultigroupe(1)">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Ouvrir Outlook
+                </button>
+                <button class="btn-mg-sms" onclick="copyMultigroupeSms(1)">SMS</button>
+              </div>
+            </div>
+            <!-- Groupe 2 : ARPT (version filtrée réglementaire) -->
+            <div class="mg-card mg-card-regulated" id="mg-card-2">
+              <div class="mg-card-header">
+                <span class="mg-badge mg-badge-filtered">
+                  <svg viewBox="0 0 24 24" width="11" height="11" style="vertical-align:-1px;margin-right:3px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Filtré réglementaire
+                </span>
+                <span class="mg-card-name">Plaintes QoS (ARPT)</span>
+              </div>
+              <div class="mg-preview mg-preview-filtered" id="mg-preview-2">—</div>
+              <div class="mg-actions">
+                <button class="btn-mg-send" onclick="sendMultigroupe(2)">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Ouvrir Outlook
+                </button>
+                <button class="btn-mg-sms" onclick="copyMultigroupeSms(2)">SMS</button>
+              </div>
+            </div>
+            <!-- Groupe 3 : Remontées QoS / Terrain -->
+            <div class="mg-card" id="mg-card-3">
+              <div class="mg-card-header">
+                <span class="mg-badge mg-badge-full">Détail complet</span>
+                <span class="mg-card-name">Remontées QoS OGN</span>
+              </div>
+              <div class="mg-preview" id="mg-preview-3">—</div>
+              <div class="mg-actions">
+                <button class="btn-mg-send" onclick="sendMultigroupe(3)">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Ouvrir Outlook
+                </button>
+                <button class="btn-mg-sms" onclick="copyMultigroupeSms(3)">SMS</button>
+              </div>
+            </div>
+          </div>
+          <!-- Bouton envoi groupé en un clic -->
+          <div style="margin-top:1rem">
+            <button class="btn-primary" style="width:100%" onclick="sendAllGroupes()">
+              <svg viewBox="0 0 24 24" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Envoyer les 3 groupes en un clic
+            </button>
+            <div class="mg-arpt-warning">
+              <svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Le message ARPT est automatiquement filtré : aucun détail technique (distance fibre, km, actions internes) n'est transmis au régulateur.
+            </div>
+          </div>
+        </div>
+
+        <!-- SMS -->
+        <div class="preview-pane hidden" id="pane-sms">
+          <div class="preview-toolbar">
+            <span class="preview-edit-hint">✏️ Cliquez pour modifier</span>
+            <button class="btn-reset-preview" onclick="resetSmsPreview()" title="Réinitialiser">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Réinitialiser
+            </button>
+          </div>
+          <div class="sms-frame" id="sms-text-preview"
+               contenteditable="true" spellcheck="false"
+               oninput="_onSmsInput()">
+            <div class="preview-empty">
+              <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <p>Le texte SMS apparaîtra ici</p>
+            </div>
+          </div>
+          <button class="copy-sms-inline" onclick="copySms()">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copier
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+</div>
+
+<!-- ═══ MODAL PARAMÈTRES ═══ -->
+<div class="modal-overlay" id="modal-settings" onclick="closeSettingsOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Paramètres</span>
+      <button class="modal-close" onclick="closeSettings()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="settings-section">
+        <div class="settings-title">Signature</div>
+        <div class="row-2">
+          <div class="field-group">
+            <label class="field-label">Nom complet</label>
+            <input type="text" id="sig-nom" class="field-input" placeholder="Prénom NOM">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Téléphone</label>
+            <input type="text" id="sig-tel" class="field-input" placeholder="+224 6XX XX XX XX">
+          </div>
+        </div>
+        <div class="row-2" style="margin-top:.75rem">
+          <div class="field-group">
+            <label class="field-label">Fonction</label>
+            <input type="text" id="sig-fonction" class="field-input" placeholder="Ingénieur Supervision">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Entité</label>
+            <input type="text" id="sig-entite" class="field-input" placeholder="Orange Guinée — NOC">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Destinataires À :</div>
+        <textarea id="cfg-to" class="field-input field-textarea" rows="4"
+                  placeholder="Une adresse par ligne"></textarea>
+        <div class="field-hint">Une adresse email par ligne</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Destinataires Cc :</div>
+        <textarea id="cfg-cc" class="field-input field-textarea" rows="4"
+                  placeholder="Une adresse par ligne"></textarea>
+        <div class="field-hint">Une adresse email par ligne</div>
+      </div>
+
+      <!-- Fix #7 : Rechargement catalogue -->
+      <div class="settings-section">
+        <div class="settings-title">Destinataires Notification À :</div>
+        <div class="field-hint" style="margin-bottom:.5rem;font-size:.75rem;color:var(--text-3)">
+          Boucle mail séparée pour les notifications (ATPT, supervision, etc.)
+        </div>
+        <textarea id="settings-notif-to" class="field-input field-textarea" rows="3"
+                  placeholder="Une adresse par ligne — laisser vide pour utiliser la liste principale"></textarea>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Destinataires Notification Cc :</div>
+        <textarea id="settings-notif-cc" class="field-input field-textarea" rows="2"
+                  placeholder="Une adresse par ligne"></textarea>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Catalogue des services</div>
+        <div class="field-hint" style="margin-bottom:.5rem">
+          Recharger si vous avez mis à jour le fichier incidents_data.xlsx (nouvel onglet mensuel).
+        </div>
+        <button class="btn-ghost" onclick="reloadCatalog()" id="btn-reload-catalog" style="width:100%">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Recharger le catalogue
+        </button>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSettings()">Annuler</button>
+      <button class="btn-primary" onclick="saveSettings()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMATION (Fix #9) ═══ -->
+<div class="modal-overlay" id="modal-confirm" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="confirm-title">Confirmer</span>
+      <button class="modal-close" onclick="closeConfirm()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <pre id="confirm-detail" style="font-family:inherit;white-space:pre-wrap;font-size:.85rem;
+           color:var(--text-2);background:var(--surface-2);padding:.75rem;border-radius:8px;margin:0"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-primary" onclick="doConfirm()" style="background:var(--red,#F44336)">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Envoyer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL TEMPLATES (XXL #5) ═══ -->
+<div class="modal-overlay" id="modal-templates" onclick="if(event.target===this)closeTemplates()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Modèles d'incidents
+      </span>
+      <button class="modal-close" onclick="closeTemplates()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="templates-list">
+        <div class="tpl-empty">Chargement…</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeTemplates()">Fermer</button>
+      <button class="btn-primary" onclick="saveCurrentAsTemplate()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Sauver le formulaire actuel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL HISTORIQUE (XXL #1) ═══ -->
+<div class="modal-overlay" id="modal-history" onclick="if(event.target===this)closeHistory()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+        Historique des incidents envoyés
+      </span>
+      <button class="modal-close" onclick="closeHistory()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="history-loading" style="padding:2rem;text-align:center;color:var(--text-3)">Chargement…</div>
+      <table class="history-table" id="history-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Date / Heure</th>
+            <th>Type</th>
+            <th>Mode</th>
+            <th>Service / Lien</th>
+            <th>Ticket</th>
+            <th>Objet envoyé</th>
+            <th>Via</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+      <div id="history-empty" style="display:none;padding:2rem;text-align:center;color:var(--text-3)">
+        Aucun incident enregistré pour l'instant.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeHistory()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIG GROUPES (XXL #3) ═══ -->
+<div class="modal-overlay" id="modal-groupes" onclick="if(event.target===this)closeGroupesConfig()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Configuration des groupes réglementaires</span>
+      <button class="modal-close" onclick="closeGroupesConfig()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-section">
+        <div class="settings-title">Groupe 1 — Com Incident &amp; TP OGN (détail complet)</div>
+        <textarea id="grp1-to" class="field-input field-textarea" rows="3" placeholder="Une adresse par ligne"></textarea>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Groupe 2 — ARPT / Plaintes QoS (version filtrée automatiquement)</div>
+        <div class="field-hint" style="margin-bottom:.5rem">⚠️ Ce groupe ne reçoit jamais les détails techniques (OTDR, km, actions internes). Le filtrage est automatique.</div>
+        <textarea id="grp2-to" class="field-input field-textarea" rows="3" placeholder="Une adresse par ligne"></textarea>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Groupe 3 — Remontées QoS OGN / Terrain (détail complet)</div>
+        <textarea id="grp3-to" class="field-input field-textarea" rows="3" placeholder="Une adresse par ligne"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeGroupesConfig()">Annuler</button>
+      <button class="btn-primary" onclick="saveGroupesConfig()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL NOUVEAU TICKET ═══ -->
+<div class="modal-overlay" id="modal-new-ticket" onclick="if(event.target===this)closeNewTicket()">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Nouveau ticket d'incident
+      </span>
+      <button class="modal-close" onclick="closeNewTicket()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="field-group">
+          <label class="field-label">Type d'incident *</label>
+          <select id="nt-type" class="field-input" onchange="onTicketTypeChange()">
+            <option value="">— Sélectionner —</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Superviseur *</label>
+          <select id="nt-superviseur" class="field-input">
+            <option value="1">NOC Superviseur</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Priorité</label>
+          <select id="nt-priorite" class="field-input">
+            <option value="P1">P1 — Critique</option>
+            <option value="P2" selected>P2 — Haute</option>
+            <option value="P3">P3 — Normale</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Criticité</label>
+          <select id="nt-criticite" class="field-input">
+            <option value="critique">Critique</option>
+            <option value="haute">Haute</option>
+            <option value="normale" selected>Normale</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Service impacté</label>
+          <input type="text" id="nt-service" class="field-input" placeholder="Nom du service">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Heure de début *</label>
+          <input type="datetime-local" id="nt-hd" class="field-input">
+        </div>
+      </div>
+      <div class="field-group" style="margin-top:.65rem">
+        <label class="field-label">Description *</label>
+        <textarea id="nt-description" class="field-input field-textarea" rows="3" placeholder="Décrire l'incident…"></textarea>
+      </div>
+      <!-- Équipe TMC auto-détectée -->
+      <div class="tmc-routing-info" id="tmc-routing-info" style="display:none">
+        <svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:5px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Équipe TMC : <strong id="tmc-equipe-nom">—</strong>
+        <span id="tmc-langue-badge" class="tmc-lang-badge"></span>
+      </div>
+      <!-- Preuve -->
+      <div class="settings-section" style="margin-top:.75rem">
+        <div class="settings-title">Élément de preuve</div>
+        <div class="form-grid-2" style="margin-top:.5rem">
+          <div class="field-group">
+            <label class="field-label">Type</label>
+            <select id="nt-preuve-type" class="field-input" onchange="onPreuveTypeChange()">
+              <option value="">Aucun</option>
+              <option value="screenshot">Capture d'écran (pièce jointe)</option>
+              <option value="url">Lien URL</option>
+              <option value="note">Note parcours utilisateur</option>
+            </select>
+          </div>
+          <div class="field-group" id="nt-preuve-url-group" style="display:none">
+            <label class="field-label">URL</label>
+            <input type="url" id="nt-preuve-url" class="field-input" placeholder="https://…">
+          </div>
+        </div>
+        <div class="field-group" id="nt-preuve-note-group" style="display:none">
+          <label class="field-label">Note de parcours</label>
+          <textarea id="nt-preuve-note" class="field-input field-textarea" rows="2"
+                    placeholder="Étape précise où le test s'est arrêté…"></textarea>
+        </div>
+      </div>
+      <!-- Destinataires TMC override -->
+      <div class="settings-section" style="margin-top:.5rem">
+        <div class="settings-title">Destinataires TMC (optionnel — remplace le routage auto)</div>
+        <textarea id="nt-destinataires" class="field-input field-textarea" rows="2"
+                  placeholder="adresse1@orange.com; adresse2@orange.com"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeNewTicket()">Annuler</button>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn-ghost" onclick="createTicketOnly()">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Créer sans notifier
+        </button>
+        <button class="btn-primary" onclick="createTicketAndNotify()">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Créer + Notifier TMC
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL DÉTAIL TICKET ═══ -->
+<div class="modal-overlay" id="modal-ticket-detail" onclick="if(event.target===this)closeTicketDetail()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title" id="detail-ticket-numero">—</span>
+      <button class="modal-close" onclick="closeTicketDetail()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="detail-ticket-body" style="padding:0">
+      <div style="padding:2rem;text-align:center;color:var(--text-3)">Chargement…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeTicketDetail()">Fermer</button>
+      <div id="detail-ticket-actions" style="display:flex;gap:.5rem"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
